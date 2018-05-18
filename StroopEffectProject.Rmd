@@ -1,0 +1,308 @@
+---
+title: "STATISTICS: The Science of Decisions"
+author: " by Jesus Fandino"
+output: html_document
+---
+
+
+
+## Introduction
+
+In psychology, the [Stroop effect](https://en.wikipedia.org/wiki/Stroop_effect) accounts for an increase in the response time of individuals completing a task when interference is present. 
+ 
+In simple terms, interference in psychology occurs when people try to learn something new that causes internal conflict with previously learned materials. 
+ 
+Common tests regarding the Stroop effect consist in recording response times for naming colors (in color printed words) under two different conditions:  
+1. Congruent Color Condition (CCC): Names of colors appear in the same ink of the named color.  
+2. Incongruent Color Condition (ICC): The words are printed in a color that differs from the one it denotes. 
+ 
+It has been observed that the time to complete the assignment (naming the colors of a given set of words as fast as possible) is shorter in the case of CCC than that of ICC because of interference. The fact that the meaning of the word and its actual color are different in ICC constitutes what is called a conflicting word stimulus. The increase in the time to react to this kind of stimuli is taken as a measure of the interference of word stimuli upon naming colors, as pointed out by [Stroop (1935)](http://psychclassics.yorku.ca/Stroop/).   
+
+
+
+## Objectives
+
+In this project, we have been presented with data collected from 24 people that took a Stroop test like the one described above. We have used that data for:
+
+- Presenting it in meaningful graphic displays
+- Providing some descriptive statistics on it
+- Conducting a statistical hypothesis test suitable for this experiment
+- Producing a final statement (supported by a strong statistical evidence), on the question of whether or not there is an increase in response time upon conducting ICC (compared to CCC). 
+
+
+
+
+
+## Exploratory data analysis
+
+Figure 1 shows the histograms of the distribution of the time needed to complete an assignment: Congruent test is displayed in yellow and Incongruent test in blue. The sample size was 24. 
+
+```{r data and histograms, echo=FALSE, message=FALSE}
+library(ggplot2)
+library(gridExtra)
+library(reshape2)
+
+mydata = read.csv("stroopdata.csv")  # read csv file
+mydatalong <- melt(mydata[,1:2])
+
+p1 <- ggplot(mydata, aes(x = Congruent)) +
+  geom_histogram(color = I('black'), fill = '#f1c40f', binwidth = 2.5) +
+  labs(x = "", y = "Frequency") +
+  theme_bw() +
+  #theme(axis.title.y = element_blank()) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+p2 <- ggplot(mydata,  aes(x = Incongruent)) +
+  geom_histogram(color = I('black'), fill = '#1a5276', binwidth = 2.5) +
+  labs(x = "",  y = "") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+p3 <- ggplot(mydatalong) + 
+    geom_histogram(aes(x = value, color = I('black'), 
+                       fill=variable), binwidth = 2.5, alpha = 0.9) +
+    labs(x = "Response time (seconds)", y = "Frequency") +
+    scale_fill_manual(values=c('#f1c40f', '#1a5276'))+
+    theme_bw() +
+    theme(legend.title=element_blank(), legend.position = c(0.8, 0.7)) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+grid.arrange(p1, p2, p3, ncol = 2, layout_matrix = rbind(c(1,2), c(3,3)))
+
+```
+
+Figure 1. Histograms for the time to complete an asignment
+
+
+
+
+
+For the Congruent test, the maximum frequency lies somewhere between 14 and 16 s, and it is more or less centered. 
+
+The results of the Incongruent test (blue histogram, figure 1), show the data spread over a wider time interval than in the previous case. The maximum frequency is attained between 20 and 22 s. The distribution has two values separated from the body of the data.  
+
+When plotting both histograms together, there is an apparent shift toward higher response times in the case of ICC.
+
+
+Two box plots are displayed in figure 2, corresponding to the Congruent (yellow) and Incongruent (blue) tests. Now some differences between the two datasets arise in a more straightforward manner:  
+
+- There are two outliers in the Incongruent dataset, responsible for the difference between the mean (black stars) and the median values. 
+- In the case of Congruent tests no outliers are observed. Therefore the mean and median values almost match. 
+- The Incongruent dataset appears shifted towards higher values with respect to the CCC.
+
+```{r box plots, echo=FALSE, message=FALSE}
+ggplot(data=mydatalong, aes(x=variable, y=value, fill=variable)) + 
+  geom_boxplot(notch = TRUE) +
+  scale_fill_manual(values=c('#f1c40f', '#1a5276'))+
+  theme_bw() +
+  labs(y = "Response time (seconds)", x = "") +
+  theme(legend.title=element_blank(), legend.position = "none") +
+  stat_summary(fun.y = "mean", geom = "point", color = "black", shape = 8, 
+               size = 4) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  theme(axis.text.x = element_text(face="bold", size=12),
+          axis.text.y = element_text(size=12))
+ 
+```
+
+Figure 2.  Box plots for Congruent and Incongruent tests, where the black star represent the mean value.
+
+
+
+
+Numerical values of some descriptive statistics for both tests are listed in Table I. Those results confirm some of our earlier observations on the data. The difference between the mean and the median in the case of Congruent tests is about 0.3 seconds and it increased up to a second in the case of ICC due to the presence of those two outliers. (We confirmed our previous statement by running a separate test on Incongruent data with the two outliers removed).
+
+```{r table, echo=FALSE, message=FALSE }
+library(formattable)
+
+tmp <- do.call(data.frame, 
+           list(mean = apply(mydata, 2, mean),
+                standard_deviation = apply(mydata, 2, sd),
+                median = apply(mydata, 2, median),
+                min = apply(mydata, 2, min),
+                max = apply(mydata, 2, max),
+                sample_size = apply(mydata, 2,length)))
+df = data.frame(t(tmp))
+
+formattable(round(df, 1))
+```
+Table I. Some statistics that complement the information depicted in Figures 1 and 2.
+
+
+
+
+
+
+There is a slightly increment in the standard deviation and range for the Incongruent sample with respect to Congruent one, which is consistent with ICC data sweeping a wider time interval. However they remain close. The mean and median values are higher for ICC tests compared to those of CCC. On average, it took people about 14 seconds to finish naming colors under CCC but roughly 8 s more to name colors under incongruent word stimulus or ICC. Given the difference in the average times (which roughly represents an increment of 57%)  and the graphical display of the data shown in figure 2, it is reasonable to believe that this behavior could be the result of people enduring different levels of interference under a conflicting word stimulus.  
+
+So far we have visualized our data and provide a set of statistics that help us to describe it. The values found made us think that maybe the extra time it takes in average to complete the test under incongruent word stimulus can be explained by the presence of interference (Stroop effect) instead of just chance. However, a decision about how to explain the behavior observed (beyond some educated speculation) can only be made upon completion of a hypothesis test.   
+
+
+
+
+## Hypothesis Test
+
+We worked with a sample of 24 people doing two different tests, which is a kind of repeated measures design. For that reason, we choose to conduct a dependent samples t-test study. 
+
+
+### Variables 
+ 
+Our independent variable was the congruence between word meaning and color. In this particular case, this is a Boolean variable (True = CCC, False = ICC). The dependent variable was the time it takes to complete the test as the congruency is manipulated in the experiment. 
+ 
+
+
+### Assumptions underlying dependent t-test:
+
+- The dependent variable must be continuous (interval/ratio).
+
+Checked, as time behaves as a continuum.
+
+- The observations are independent of one another.
+
+We assume that every row in this dataset corresponds to a different person.
+
+- The dependent variable should be approximately normally distributed.
+ 
+The population from where our sample (the difference of the times) was extracted is supposed to be Normal. A graphic display of the difference in time from ICC test with respect to CCC is depicted in the histogram of figure 3.  
+
+```{r histogram 2, echo=FALSE, message=FALSE}
+# Finding the difference in time and plotting it 
+mydata$Delta <- mydata$Incongruent - mydata$Congruent
+
+ggplot(mydata, aes(x = Delta)) +
+  geom_histogram(color = I('black'), fill = '#FA8072', binwidth = 1.5) +
+  labs(x = "time ICC - time CCC (seconds)", y = "Frequency") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+  theme(axis.text.x = element_text(size=12), axis.text.y = element_text(size=12))
+```
+
+ Figure 3. Histogram for the difference of test times for the two conditions
+ 
+
+The time response values are shifted on average around 8 seconds toward higher values in this case. That means it took people on average 8 seconds more to finish the ICC test compared with the time they made in the CCC test. The shape of the distribution  does not look consistent with a Normal distribution. 
+  
+
+- The dependent variable should not contain any outliers.
+
+That seems not the case here. We observe at least two values that are far apart from the rest.
+
+Two out of four assumptions failed the visual test. However, we know that the t-test is robust even in case of non-normal distributions due to the Central Limit Theorem. 
+We are going to give a try to the paired t-test, looking carefully at the results just in case our t statistic gets close to the critical value.
+ 
+
+
+### Null hypothesis: 
+
+Let &mu;c be the population mean of the response time for the CCC test and &mu;I the 
+population mean of the response time for the ICC test
+
+There is no difference in population means under CCC or ICC, H0: &mu;c = &mu;I
+
+
+
+### Alternate hypothesis: 
+
+The population mean for ICC response time is significantly larger than the population mean for CCC response time,  &mu;I &gt;  &mu;c
+
+
+
+### t-test Results
+
+We conducted a dependent t-test as follows:
+
+- One-sided
+
+- Degrees of freedom: 23
+
+- Significance level: 0.01
+
+- t = 8.02
+
+- P = 2.05E-08
+
+- t-critical = 2.5
+
+```{r t-test, echo=FALSE, include=FALSE}
+t.test(x=mydata$Incongruent, y=mydata$Congruent, paired = TRUE, 
+       alternative = "greater", conf = 0.99)
+
+tabulated_t = abs(qt(0.01, 23)) # 99% confidence, 1 sided (same as qt(0.99, 23))
+tabulated_t = round(tabulated_t, 1)
+sprintf("t-critical: %s", tabulated_t)
+```
+
+
+
+Because t &gt; t-critical, we rejected the null hypothesis.
+
+
+### Is the difference between the two times normally distributed?
+
+Let's take a closer look at that normality assumption. Another way to test for it is through [Q-Q plots](https://en.wikipedia.org/wiki/Q%E2%80%93Q_plot) 
+
+
+```{r normality test 2, echo=FALSE}
+library(car)
+qqPlot(mydata$Delta, grid = FALSE, col = "blue", ylab = "time ICC - time CCC", 
+       cex = 2)
+```
+
+Figure 4. Q-Q plot for the difference of time (time ICC - time CCC).
+
+
+For the data to be considered normally distributed, all the points in the Q-Q plot should lie on the straight line. At first sight, it seems like some points do not fulfill this requirement. If the distribution were, in fact, normal, this pattern is consistent with an unusually high number of outliers. 
+
+Another test for normality we can pursue is the Shapiro-Wilk test. In this test, the null hypothesis is that the population is normally distributed. If the p-value is lower than the predefined alpha level (usually set at 0.05), then the null hypothesis is rejected, and [there is evidence](https://en.wikipedia.org/wiki/Shapiro%E2%80%93Wilk_test) that the data tested does not come from a normally distributed population. 
+
+```{r normality test 3, echo=FALSE, include=FALSE}
+shapiro.test(mydata$Delta)
+```
+
+Since the p-value for that test (0.036) is below 0.05, we have to reject the null hypothesis, meaning that the departure from normality could be real. 
+
+At this point, we wondered, what if those two outliers weren't there. We must resist the temptation of removing them because for one part we have a dataset with already few data points and secondly, we could not found any reasonable explanation (other than avoiding the complications derived from working with a potentially non-normal distribution) to do so.
+
+We believe that at best, the normality of the distribution is under question. In such circumstances, it is wise to search for alternatives. In this case, the most popular option is the [Wilcoxon Signed-Rank Test](https://en.wikipedia.org/wiki/Wilcoxon_signed-rank_test), which is a non-parametric statistical hypothesis test suggested [in a paper](http://sci2s.ugr.es/keel/pdf/algorithm/articulo/wilcoxon1945.pdf) by Frank Wilcoxon (1945).
+
+
+### Assumptions of the Wilcoxon Signed-Rank Test
+
+
+- Data are paired and come from the same population.
+
+- Each pair is chosen randomly and independently.
+
+- The data are measured on at least an interval scale when, as is usual, within-pair differences are calculated to perform the test.
+
+Since the data meet all conditions (as far as we know), we proceeded to carry out the Wilcoxon Signed-Rank test.
+
+
+```{r wilcoxon signed-rank test, echo=FALSE, include=FALSE}
+wilcox.test(mydata$Congruent, mydata$Incongruent, paired=TRUE) 
+```
+### Results of the Wilcoxon Signed-Rank Test
+
+A p-value of 1.2E-07 indicates that we must reject the null-hypothesis (both mean values came from populations with the same mean). 
+
+This result serves as a further validation of what we previously found with the t-test. 
+
+
+
+## Conclusions
+
+After conducting two different hypothesis tests on the data given, we confirmed our original thoughts: there is an increase in the time it takes to name colors under an incongruent word stimulus compared to the time for completion a similar task under a congruent word stimulus. The evidence underlying in our dataset is strong in this regard.
+
+We just added a confirmation to a well-known psychologic experiment. There are several theories attempting to explain this behavior, the most common of those suggests that reading is a process we have automatized through everyday practice. As a consequence, it takes less time to recognize the meaning of words we read than to process the meaning of the colors we see, therefore choosing the right answer in a conflicting word versus color meaning causes a delay in our response.
+
+The Stroop effect is not limited to just words and colors; it has been demonstrated in the case of numbers and digits sizes as well. [Besner and Coltheart](https://www.sciencedirect.com/science/article/pii/0028393279900538) asked the participants in their experiment to compare numerical values ignoring the size of the digits and they found that their reaction slowed down in the case of incongruent stimulus. There are more examples including words and emotions, warped words, etc. 
+
+
+
+
+
+
+
+
+
+
